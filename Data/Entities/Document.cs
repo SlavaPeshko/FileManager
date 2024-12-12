@@ -10,4 +10,5 @@ public class Document : BaseEntity<int>
     public required string Path { get; set; }
     public DateTimeOffset UploadAt { get; set; }
     public int DownloadCount { get; set; }
+    public required User User { get; set; }
 }
