@@ -1,6 +1,9 @@
-﻿namespace Application.Documents.Queries;
+﻿using Application.Common.Models;
+using MediatR;
 
-public class GetDocumentsQuery
+namespace Application.Documents.Queries.GetDocumentsQuery;
+
+public class GetDocumentsQuery : IRequest<PaginatedList<DocumentDto>>
 {
-    
+    public required int UserId { get; set; }
 }

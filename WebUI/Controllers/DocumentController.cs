@@ -1,12 +1,19 @@
-﻿using Application.Documents.Commands.UploadDocumentCommand;
+﻿using Application.Documents.Commands.AccessSharedLinkCommand;
+using Application.Documents.Commands.CreateSharedLinkCommand;
+using Application.Documents.Commands.DownloadDocumentCommand;
+using Application.Documents.Commands.UploadDocumentCommand;
+using Application.Documents.Commands.UploadDocumentsCommand;
 using Application.Documents.Queries.GetDocumentByIdQuery;
+using Application.Documents.Queries.GetDocumentsQuery;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebUI.Extensions;
+using WebUI.ViewModels;
 
 namespace WebUI.Controllers;
 
-// [Authorize]
+[Attributes.Authorize]
 [ApiController]
 [Route("[controller]")]
 public class DocumentsController : ControllerBase
@@ -21,7 +28,12 @@ public class DocumentsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetDocuments()
     {
-        return Ok();
+        var documents = await _mediator.Send(new GetDocumentsQuery
+        {
+            UserId = Request.GetUserIdFromHeader()
+        });
+
+        return Ok(documents);
     }
 
     [HttpGet("{id:int}")]
@@ -33,7 +45,7 @@ public class DocumentsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> UploadDocument([FromForm]int userId, [FromForm] IFormFile file)
+    public async Task<IActionResult> UploadDocument([FromForm] IFormFile file)
     {
         using var stream = new MemoryStream();
         await file.CopyToAsync(stream);
@@ -43,7 +55,7 @@ public class DocumentsController : ControllerBase
         {
             Name = file.FileName,
             Content = fileContents,
-            UserId = userId
+            UserId = Request.GetUserIdFromHeader()
         });
 
         return Ok(documentId);
@@ -52,18 +64,62 @@ public class DocumentsController : ControllerBase
     [HttpPost("upload-multiple")]
     public async Task<IActionResult> UploadDocuments([FromForm] IFormFile[] files)
     {
-        return Ok();
+        if (files == null || files.Length == 0)
+        {
+            return BadRequest("No files were uploaded.");
+        }
+
+        List<Document> documents = [];
+        foreach (var file in files)
+        {
+            using var stream = new MemoryStream();
+            await file.CopyToAsync(stream);
+            var fileContents = stream.ToArray();
+            documents.Add(new Document
+            {
+                Name = file.FileName,
+                Content = fileContents
+            });
+        }
+
+        var documentIds = await _mediator.Send(new UploadDocumentsCommand
+        {
+            Documents = documents,
+            UserId = Request.GetUserIdFromHeader()
+        });
+
+        return Ok(documentIds);
     }
 
-    [HttpGet("download/{id}")]
+    [HttpGet("{id:int}/download")]
     public async Task<IActionResult> DownloadDocument(int id)
     {
-        return File(string.Empty, "application/octet-stream");
+        var document = await _mediator.Send(new DownloadDocumentCommand{ Id = id });
+
+        return File(document.Content, "application/octet-stream", document.Name);
     }
 
-    [HttpPost("share/{id}")]
-    public async Task<IActionResult> ShareDocument(int id, [FromQuery] TimeSpan expiry)
+    [HttpPost("{id:int}/share")]
+    public async Task<IActionResult> CreateShareDocument([FromBody]SharedLinkModel model, int id)
     {
-        return Ok(string.Empty);
+        var uniqueKey = await _mediator.Send(new CreateSharedLinkCommand
+        {
+            Id = id,
+            DurationInSeconds = model.DurationInSeconds
+        });
+
+        return Ok($"{Request.Scheme}://{Request.Host}/documents/shared/{uniqueKey}");
+    }
+
+    [AllowAnonymous]
+    [HttpGet("shared/{uniqueKey}")]
+    public async Task<IActionResult> AccessSharedLink(string uniqueKey)
+    {
+        var document = await _mediator.Send(new AccessSharedLinkCommand
+        {
+            UniqueKey = uniqueKey
+        });
+
+        return File(document.Content, "application/octet-stream", document.Name);
     }
 }

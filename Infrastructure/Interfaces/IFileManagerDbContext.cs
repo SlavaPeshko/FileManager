@@ -1,7 +1,8 @@
 ﻿using Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
-namespace Application.Common.Interfaces;
+namespace Infrastructure.Interfaces;
 
 public interface IFileManagerDbContext
 {
@@ -9,5 +10,9 @@ public interface IFileManagerDbContext
 
     DbSet<Document> Documents { get; }
 
+    DbSet<SharedLink> SharedLinks { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+
+    DatabaseFacade Database { get; }
 }

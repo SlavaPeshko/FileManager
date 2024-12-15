@@ -1,6 +1,8 @@
 ﻿using Application.Common.Exceptions;
-using Application.Common.Interfaces;
+using Application.Common.Helpers;
+using Application.Common.Models;
 using Data.Entities;
+using Infrastructure.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,13 +23,16 @@ public class UploadDocumentCommandHandler : IRequestHandler<UploadDocumentComman
 
     public async Task<int> Handle(UploadDocumentCommand request, CancellationToken cancellationToken)
     {
+        var documentType = DocumentTypeHelper.GetDocumentType(request.Name);
+        if (documentType == DocumentType.None)
+        {
+            throw new UnsupportedFileTypeException($"Unsupported file type for file: {request.Name}");
+        }
+
         var fileManagerPath = _configuration.GetSection("FileManager:Path").Value ??
                    throw new ArgumentNullException("Directory is not configured.");
 
-        if (!Directory.Exists(fileManagerPath))
-        {
-            Directory.CreateDirectory(fileManagerPath);
-        }
+        DirectoryHelper.EnsureDirectoryExists(fileManagerPath);
 
         var user = await _fileManagerDbContext.Users.FirstOrDefaultAsync(x => x.Id == request.UserId, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
@@ -38,10 +43,7 @@ public class UploadDocumentCommandHandler : IRequestHandler<UploadDocumentComman
         }
 
         var userPath = Path.Combine(fileManagerPath, request.UserId.ToString());
-        if (!Directory.Exists(userPath))
-        {
-            Directory.CreateDirectory(userPath);
-        }
+        DirectoryHelper.EnsureDirectoryExists(userPath);
 
         var uniqueFileName = $"{Guid.NewGuid()}_{request.Name}";
         var filePath = Path.Combine(userPath, uniqueFileName);
@@ -53,6 +55,7 @@ public class UploadDocumentCommandHandler : IRequestHandler<UploadDocumentComman
             Name = request.Name,
             UniqueName = filePath,
             UploadAt = DateTimeOffset.UtcNow,
+            Type = (Data.Entities.Enum.DocumentType)documentType,
             User = user
         };
 

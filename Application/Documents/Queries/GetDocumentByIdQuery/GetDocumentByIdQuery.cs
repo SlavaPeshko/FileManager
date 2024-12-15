@@ -2,7 +2,7 @@
 
 namespace Application.Documents.Queries.GetDocumentByIdQuery;
 
-public record GetDocumentByIdQuery : IRequest<DocumentDto>
+public record GetDocumentByIdQuery : IRequest<DocumentBriefDto>
 {
-    public int Id { get; set; }
+    public required int Id { get; set; }
 }
