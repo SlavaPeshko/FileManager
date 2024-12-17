@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { login } from '../apiService'
+import LoadingSpinner from './LoadingSpinner'
 
 interface LoginProps {
     setLoggedIn:  (value: boolean) => void;
 }
 
-function Login(props: LoginProps) {
-    const {  setLoggedIn } = props
-    const [name, setName] = useState('')
-    const [password, setPassword] = useState('')
+const Login: React.FC<LoginProps> = ({ setLoggedIn }) => {
+    const [name, setName] = useState<string>('')
+    const [password, setPassword] = useState<string>('')
     const [error, setError] = useState<string>('')
+    const [isLoading, setIsLoading] = useState<boolean>(false)
 
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
+        setIsLoading(true)
         setError('')
 
         const userId = await login(name, password)
@@ -23,11 +25,13 @@ function Login(props: LoginProps) {
             return
         }
 
+        setIsLoading(false)
         setError('Invalid username or password')
     }
 
     return (
         <>
+            <LoadingSpinner isLoading={isLoading} />
             {error && <div className="alert alert-danger">{error}</div>}
 
             <form onSubmit={handleLogin}>
