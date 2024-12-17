@@ -44,7 +44,6 @@ const Login: React.FC<LoginProps> = ({ setLoggedIn }) => {
                         placeholder="Enter name"
                         value={name}
                         onChange={(e: React.FormEvent<HTMLInputElement>) => setName(e.currentTarget.value)} />
-
                 </div>
                 <div className="mb-3">
                     <label className="form-label" htmlFor="password">Password</label>

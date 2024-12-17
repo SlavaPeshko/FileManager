@@ -87,7 +87,6 @@ const UploadFiles: React.FC<UploadFilesProps> = ({ onDocumentsUpload }) => {
                 </button>
             </div>
         </>
-
     );
 };
 
