@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Documents.Commands.CreateSharedLinkCommand;
 
-public class CreateSharedLinkCommandHandler : IRequestHandler<CreateSharedLinkCommand, string>
+public class CreateSharedLinkCommandHandler : IRequestHandler<CreateSharedLinkCommand, CreateSharedLinkDto>
 {
     private readonly IFileManagerDbContext _fileManagerDbContext;
 
@@ -15,7 +15,7 @@ public class CreateSharedLinkCommandHandler : IRequestHandler<CreateSharedLinkCo
         _fileManagerDbContext = fileManagerDbContext;
     }
 
-    public async Task<string> Handle(CreateSharedLinkCommand request, CancellationToken cancellationToken)
+    public async Task<CreateSharedLinkDto> Handle(CreateSharedLinkCommand request, CancellationToken cancellationToken)
     {
         var document = await _fileManagerDbContext.Documents
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken).ConfigureAwait(false);
@@ -35,6 +35,10 @@ public class CreateSharedLinkCommandHandler : IRequestHandler<CreateSharedLinkCo
         _fileManagerDbContext.SharedLinks.Add(sharedLink);
         await _fileManagerDbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        return sharedLink.UniqueKey;
+        return new CreateSharedLinkDto
+        {
+            UniqueKey = sharedLink.UniqueKey,
+            ExpirationDate = sharedLink.ExpirationDate
+        };
     }
 }

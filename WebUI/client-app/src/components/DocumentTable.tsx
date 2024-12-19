@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import LoadingSpinner from './LoadingSpinner'
+import SharedLinskModalWindow from './SharedLinksModalWindow'
 import { DocumentDto } from '../types/DocumentDto'
 import { DocumentType } from '../types/DocumentType'
 import { downloadDocument } from '../apiService'
-import { createSharedLink } from '../apiService'
 import { FaFilePdf, FaFileExcel, FaFileWord, FaFileAlt, FaFileImage, FaFile } from 'react-icons/fa'
 
 import '../App.css'
@@ -14,8 +14,9 @@ interface DocumentTableProps {
 }
 
 const DocumentTable: React.FC<DocumentTableProps> = ({ documents, onUpdateDocument }) => {
-    const [sharedLink, setSharedLink] = useState<string>('')
     const [isLoading, setIsLoading] = useState<boolean>(false)
+    const [isModalVisible, setIsModalVisible] = useState<boolean>(false)
+    const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null)
 
     const getDocumentIcon = (type: DocumentType) => {
         switch (type) {
@@ -42,18 +43,20 @@ const DocumentTable: React.FC<DocumentTableProps> = ({ documents, onUpdateDocume
         setIsLoading(false)
     };
 
-    const handleShare = async (id: number) => {
-        setIsLoading(true)
-        const sharedLink = await createSharedLink(id, 240)
-        setSharedLink(sharedLink)
-        setIsLoading(false)
+    const handleOnOpenModalWindow = async (id: number) => {
+        setIsModalVisible(true)
+        setSelectedDocumentId(id)
     };
+
+    const handleOnClose = () => {
+        setIsModalVisible(false)
+        setSelectedDocumentId(null)
+    }
 
     return (
         <>
             <LoadingSpinner isLoading={isLoading} />
             <div className="container mt-4">
-                {sharedLink && <div className="alert alert-primary">{sharedLink}</div>}
                 <h3>Downloaded Documents</h3>
                 <table className="table table-striped">
                     <thead>
@@ -82,7 +85,7 @@ const DocumentTable: React.FC<DocumentTableProps> = ({ documents, onUpdateDocume
                                     <td>{document.downloadCount}</td>
                                     <td>
                                         <button style={{ marginRight: '5px' }} className="btn btn-primary btn-sm" onClick={() => handleDownload(document)}>Download</button>
-                                        <button className="btn btn-primary btn-sm" onClick={() => handleShare(document.id)}>Share</button>
+                                        <button className="btn btn-primary btn-sm" onClick={() => handleOnOpenModalWindow(document.id)}>Create Share Link</button>
                                     </td>
                                 </tr>
                             ))
@@ -96,6 +99,7 @@ const DocumentTable: React.FC<DocumentTableProps> = ({ documents, onUpdateDocume
                     </tbody>
                 </table>
             </div>
+            {isModalVisible && <SharedLinskModalWindow onClose={handleOnClose} documentId={selectedDocumentId} />}
         </>
 
     );

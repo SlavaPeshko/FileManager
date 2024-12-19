@@ -11,24 +11,19 @@ function App() {
   const [documents, setDocuments] = useState<DocumentDto[]>([]);
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (userId) {
-      setLoggedIn(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!loggedIn) {
+    const userId = localStorage.getItem("userId") || '0'
+    if (userId === '0') {
       return
     }
+
+    setLoggedIn(true);
+    getData()
 
     async function getData() {
       const data = await getDocuments()
       setDocuments(data.items)
     }
-
-    getData()
-  }, [loggedIn]);
+  }, []);
 
   const handleDocumentsUpload = async () => {
     const data = await getDocuments()

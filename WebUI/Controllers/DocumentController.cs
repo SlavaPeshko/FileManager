@@ -102,13 +102,17 @@ public class DocumentsController : ControllerBase
     [HttpPost("{id:int}/share")]
     public async Task<IActionResult> CreateShareDocument([FromBody]SharedLinkModel model, int id)
     {
-        var uniqueKey = await _mediator.Send(new CreateSharedLinkCommand
+        var createSharedLinkDto = await _mediator.Send(new CreateSharedLinkCommand
         {
             Id = id,
             DurationInSeconds = model.DurationInSeconds
         });
 
-        return Ok($"{Request.Scheme}://{Request.Host}/documents/shared/{uniqueKey}");
+        return Ok(new
+        {
+            sharedLink = $"{Request.Scheme}://{Request.Host}/documents/shared/{createSharedLinkDto.UniqueKey}",
+            expirationDate = createSharedLinkDto.ExpirationDate
+        });
     }
 
     [AllowAnonymous]
