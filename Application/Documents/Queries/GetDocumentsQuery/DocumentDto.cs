@@ -4,10 +4,10 @@ namespace Application.Documents.Queries.GetDocumentsQuery;
 
 public record DocumentDto
 {
-    public int Id { get; set; }
-    public required string Name { get; set; }
-    public DocumentType Type { get; set; }
-    public string? PreviewPath { get; set; }
-    public DateTimeOffset UploadAt { get; set; }
-    public int DownloadCount { get; set; }
+    public int Id { get; init; }
+    public string Name { get; init; }
+    public DocumentType Type { get; init; }
+    public string? PreviewPath { get; init; }
+    public DateTimeOffset UploadAt { get; init; }
+    public int DownloadCount { get; init; }
 }

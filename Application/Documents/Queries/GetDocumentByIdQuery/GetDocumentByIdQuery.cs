@@ -4,5 +4,5 @@ namespace Application.Documents.Queries.GetDocumentByIdQuery;
 
 public record GetDocumentByIdQuery : IRequest<DocumentBriefDto>
 {
-    public required int Id { get; set; }
+    public int Id { get; init; }
 }

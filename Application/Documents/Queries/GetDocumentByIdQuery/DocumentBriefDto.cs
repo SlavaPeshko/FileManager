@@ -4,10 +4,10 @@ namespace Application.Documents.Queries.GetDocumentByIdQuery;
 
 public record DocumentBriefDto
 {
-    public int Id { get; set; }
-    public required string Name { get; set; }
-    public DocumentType Type { get; set; }
-    public required string Path { get; set; }
-    public DateTimeOffset UploadAt { get; set; }
-    public int DownloadCount { get; set; }
+    public int Id { get; init; }
+    public string Name { get; init; }
+    public DocumentType Type { get; init; }
+    public string Path { get; init; }
+    public DateTimeOffset UploadAt { get; init; }
+    public int DownloadCount { get; init; }
 }

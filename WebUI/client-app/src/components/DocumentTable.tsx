@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 import LoadingSpinner from './LoadingSpinner'
 import SharedLinskModalWindow from './SharedLinksModalWindow'
 import { DocumentDto } from '../types/DocumentDto'

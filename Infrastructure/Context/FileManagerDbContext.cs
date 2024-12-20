@@ -50,7 +50,9 @@ public class FileManagerDbContext: DbContext, IFileManagerDbContext
         {
             e.ToTable("SharedLinks");
             e.HasKey(s => s.Id);
-            
+            e.HasIndex(s => s.UniqueKey)
+                .IsUnique();
+
             e.Property(s => s.UniqueKey)
                 .IsRequired()
                 .HasMaxLength(64);

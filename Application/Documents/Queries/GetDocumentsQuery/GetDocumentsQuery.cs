@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Documents.Queries.GetDocumentsQuery;
 
-public class GetDocumentsQuery : IRequest<PaginatedList<DocumentDto>>
+public record GetDocumentsQuery : IRequest<PaginatedList<DocumentDto>>
 {
-    public required int UserId { get; set; }
+    public int UserId { get; init; }
 }
