@@ -6,6 +6,7 @@ public record UploadDocumentsCommand : IRequest<IEnumerable<int>>
 {
     public required List<Document> Documents { get; init; } = [];
     public required int UserId { get; init; }
+    public required string ConnectionId { get; init; }
 }
 
 public record Document

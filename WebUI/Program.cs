@@ -1,4 +1,5 @@
 using Application;
+using Application.Common;
 using Application.Common.Helpers;
 using Infrastructure.Context;
 using Infrastructure.Interfaces;
@@ -6,6 +7,7 @@ using Infrastructure.Services;
 using Microsoft.Extensions.FileProviders;
 using MySql.EntityFrameworkCore.Extensions;
 using WebUI.Filters;
+using WebUI.Services;
 
 const string allowSpecificOrigins = "AllowSpecificOrigins";
 
@@ -17,15 +19,15 @@ builder.Services.AddMySQLServer<FileManagerDbContext>(builder.Configuration.GetC
 builder.Services.AddScoped<IFileManagerDbContext>(provider => provider.GetRequiredService<FileManagerDbContext>());
 builder.Services.AddApplication();
 builder.Services.AddSingleton<IPathService, PathService>();
+builder.Services.AddSingleton<IBackgroundFileUploadQueue, BackgroundFileUploadQueue>();
+builder.Services.AddHostedService<UploadFilesBackgroundService>();
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: allowSpecificOrigins,
         policy =>
         {
-            policy.AllowAnyOrigin();
-            policy.AllowAnyMethod();
-            policy.AllowAnyHeader();
+            policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
         });
 });
 
@@ -34,6 +36,7 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<GlobalExceptionFilter>();
 });
 
+builder.Services.AddSignalR();
 var app = builder.Build();
 
 #region Create db
@@ -56,7 +59,9 @@ app.UseStaticFiles(new StaticFileOptions
 });
 app.UseCors(allowSpecificOrigins);
 app.MapControllers();
+app.MapHub<FileUploadHub>("/fileUploadHub");
 app.Run();
+
 
 
 

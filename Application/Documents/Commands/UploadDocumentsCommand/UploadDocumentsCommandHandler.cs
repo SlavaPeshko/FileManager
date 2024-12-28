@@ -1,10 +1,12 @@
 ﻿using System.Drawing;
 using System.Drawing.Imaging;
+using Application.Common;
 using Application.Common.Exceptions;
 using Application.Common.Helpers;
 using Application.Common.Models;
 using Infrastructure.Interfaces;
 using MediatR;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using PDFiumSharp;
 using DocumentEntity = Data.Entities.Document;
@@ -19,12 +21,15 @@ public class UploadDocumentsCommandHandler : IRequestHandler<UploadDocumentsComm
 
     private readonly IFileManagerDbContext _fileManagerDbContext;
     private readonly IPathService _pathService;
+    private readonly IHubContext<FileUploadHub> _hubContext;
 
     public UploadDocumentsCommandHandler(IFileManagerDbContext fileManagerDbContext,
-        IPathService pathService)
+        IPathService pathService,
+        IHubContext<FileUploadHub> hubContext)
     {
         _fileManagerDbContext = fileManagerDbContext;
         _pathService = pathService;
+        _hubContext = hubContext;
     }
 
     public async Task<IEnumerable<int>> Handle(UploadDocumentsCommand request, CancellationToken cancellationToken)
@@ -37,7 +42,6 @@ public class UploadDocumentsCommandHandler : IRequestHandler<UploadDocumentsComm
         {
             throw new UnsupportedFileTypeException($"Unsupported file type for files: {String.Join(", ", unsupportedFileNames)}");
         }
-
 
         var user = await _fileManagerDbContext.Users.FirstOrDefaultAsync(x => x.Id == request.UserId, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
@@ -78,8 +82,31 @@ public class UploadDocumentsCommandHandler : IRequestHandler<UploadDocumentsComm
         await using var transaction = await _fileManagerDbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            var writeTasks = request.Documents.Select((doc, index) =>
-                File.WriteAllBytesAsync(documentPaths[index], doc.Content, cancellationToken)
+            var writeTasks = request.Documents.Select(async (doc, index) =>
+                {
+                    var length = doc.Content.Length;
+                    var writtenBytes = 0L; 
+                    var path = documentPaths[index];
+
+                    await using var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+                    var buffer = new byte[8192];
+                    var totalBytesWritten = 0L;
+
+                    for (int i = 0; i < length; i += buffer.Length)
+                    {
+                        var bytesToWrite = Math.Min(buffer.Length, length - i);
+                        Array.Copy(doc.Content, i, buffer, 0, bytesToWrite);
+
+                        await fileStream.WriteAsync(buffer, 0, bytesToWrite, cancellationToken);
+
+                        totalBytesWritten += bytesToWrite;
+                        writtenBytes += bytesToWrite;
+
+                        int percentage = (int)(writtenBytes / (double)length * 100);
+
+                        await _hubContext.Clients.Client(request.ConnectionId).SendAsync("ReceiveProgress", doc.Name, percentage, cancellationToken);
+                    }
+                }
             );
             await Task.WhenAll(writeTasks);
 
@@ -103,7 +130,7 @@ public class UploadDocumentsCommandHandler : IRequestHandler<UploadDocumentsComm
         return documents.Select(x => x.Id);
     }
 
-    private string? GeneratePreview(byte[] fileContent, string fileName, string previewDirectory, DocumentType documentType)
+    private static string? GeneratePreview(byte[] fileContent, string fileName, string previewDirectory, DocumentType documentType)
     {
         try
         {
@@ -167,7 +194,6 @@ public class UploadDocumentsCommandHandler : IRequestHandler<UploadDocumentsComm
 
         return outputStream.ToArray();
     }
-
 
     public static byte[] ConvertPdfToImage(byte[] fileContent)
     {

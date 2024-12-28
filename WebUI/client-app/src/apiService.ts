@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getUserIdFromLocalStorage } from './utils/helper'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -23,7 +24,7 @@ export const uploadFile = async (file: File) => {
         const response = await axios.post(`${API_URL}/documents`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
-                'User-Id': getUserId()
+                'User-Id': getUserIdFromLocalStorage()
             },
         })
 
@@ -33,9 +34,10 @@ export const uploadFile = async (file: File) => {
     }
 }
 
-export const uploadMultipleFiles = async (files: File[]) => {
+export const uploadMultipleFiles = async (files: File[], connectionId: string) => {
     const formData = new FormData();
 
+    formData.append('connectionId', connectionId);
     files.forEach((file) => {
         formData.append('files', file)
     });
@@ -44,7 +46,7 @@ export const uploadMultipleFiles = async (files: File[]) => {
         const response = await axios.post(`${API_URL}/documents/upload-multiple`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
-                'User-Id': getUserId()
+                'User-Id': getUserIdFromLocalStorage()
             },
         })
 
@@ -58,7 +60,7 @@ export const getDocuments = async () => {
     try {
         const response = await axios.get(`${API_URL}/documents`, {
             headers: {
-                'User-Id': getUserId()
+                'User-Id': getUserIdFromLocalStorage()
             },
         })
 
@@ -72,7 +74,7 @@ export const downloadDocument = async (id: number, name: string) => {
     try {
         const response = await axios.get(`${API_URL}/documents/${id}/download`, {
             headers: {
-                'User-Id': getUserId()
+                'User-Id': getUserIdFromLocalStorage()
             },
             responseType: 'blob'
         })
@@ -96,7 +98,7 @@ export const createSharedLink = async (id: number, durationInSeconds: number) =>
             },
             {
                 headers: {
-                    'User-Id': getUserId()
+                    'User-Id': getUserIdFromLocalStorage()
                 }
             })
 
@@ -104,8 +106,4 @@ export const createSharedLink = async (id: number, durationInSeconds: number) =>
     } catch (error) {
         console.error('Error creating shared link', error);
     }
-}
-
-const getUserId = (): string => {
-    return localStorage.getItem('userId')!
 }

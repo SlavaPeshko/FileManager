@@ -1,4 +1,6 @@
-﻿namespace WebUI.Extensions;
+﻿using Microsoft.AspNetCore.Http;
+
+namespace Infrastructure.Extensions;
 
 public static class HttpRequestExtension
 {

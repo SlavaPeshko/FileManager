@@ -18,3 +18,7 @@ export const formatIsoDate = (isoDate: string): string => {
 
     return `${day}, ${month} ${dateNumber}, ${year}, ${time}`;
 };
+
+export const getUserIdFromLocalStorage = (): string => {
+    return localStorage.getItem('userId')!
+}

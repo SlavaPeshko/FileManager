@@ -1,15 +1,16 @@
 ﻿using System.Net;
+using Infrastructure.Extensions;
 using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using WebUI.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace WebUI.Attributes;
+namespace Infrastructure.Attributes;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public class Authorize : Attribute, IAuthorizationFilter
+public class HeaderAuthorize : Attribute, IAuthorizationFilter
 {
     public void OnAuthorization(AuthorizationFilterContext context)
     {

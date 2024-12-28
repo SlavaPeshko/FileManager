@@ -2,27 +2,31 @@
 using Application.Documents.Commands.CreateSharedLinkCommand;
 using Application.Documents.Commands.DownloadDocumentCommand;
 using Application.Documents.Commands.UploadDocumentCommand;
-using Application.Documents.Commands.UploadDocumentsCommand;
 using Application.Documents.Queries.GetDocumentByIdQuery;
 using Application.Documents.Queries.GetDocumentsQuery;
+using Infrastructure.Attributes;
+using Infrastructure.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WebUI.Extensions;
+using WebUI.Models;
+using WebUI.Services;
 using WebUI.ViewModels;
 
 namespace WebUI.Controllers;
 
-[Attributes.Authorize]
+[HeaderAuthorize]
 [ApiController]
 [Route("[controller]")]
 public class DocumentsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IBackgroundFileUploadQueue _fileUploadQueue;
 
-    public DocumentsController(IMediator mediator)
+    public DocumentsController(IMediator mediator, IBackgroundFileUploadQueue fileUploadQueue)
     {
         _mediator = mediator;
+        _fileUploadQueue = fileUploadQueue;
     }
 
     [HttpGet]
@@ -62,33 +66,27 @@ public class DocumentsController : ControllerBase
     }
 
     [HttpPost("upload-multiple")]
-    public async Task<IActionResult> UploadDocuments([FromForm] IFormFile[] files)
+    public async Task<IActionResult> UploadDocuments([FromForm] IFormFile[] files, [FromForm] string connectionId)
     {
         if (files == null || files.Length == 0)
         {
             return BadRequest("No files were uploaded.");
         }
 
-        List<Document> documents = [];
         foreach (var file in files)
         {
             using var stream = new MemoryStream();
             await file.CopyToAsync(stream);
-            var fileContents = stream.ToArray();
-            documents.Add(new Document
+            await _fileUploadQueue.EnqueueAsync(new FileUpload
             {
-                Name = file.FileName,
-                Content = fileContents
+                FileName = file.FileName,
+                Content = stream.ToArray(),
+                UserId = Request.GetUserIdFromHeader(),
+                ConnectionId = connectionId
             });
         }
 
-        var documentIds = await _mediator.Send(new UploadDocumentsCommand
-        {
-            Documents = documents,
-            UserId = Request.GetUserIdFromHeader()
-        });
-
-        return Ok(documentIds);
+        return Ok();
     }
 
     [HttpGet("{id:int}/download")]

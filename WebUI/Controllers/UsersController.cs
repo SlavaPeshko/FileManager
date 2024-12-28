@@ -6,7 +6,6 @@ using WebUI.ViewModels;
 
 namespace WebUI.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("[controller]")]
 public class UsersController : ControllerBase
